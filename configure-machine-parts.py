@@ -12,7 +12,6 @@ os.environ["SERPER_API_KEY"] = <insert Serper API key here >
 
 search_tool = SerperDevTool()
 
-# mixtao-7bx2-moe-v8.1.Q4_K_M.gguf
 
 # Creating a systems architect agent with memory and verbose mode
 researcher = Agent(
