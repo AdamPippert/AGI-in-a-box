@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "agi-in-a-box"
+version = "0.1.0"
+description = ""
+authors = ["Adam Pippert <adam.pippert@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+grpcio = "^1.62.1"
+crewai = "^0.22.5"
+pydantic = "^2.6.4"
+flake8 = "^7.0.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
