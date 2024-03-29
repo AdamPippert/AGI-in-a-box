@@ -7,8 +7,8 @@ import os
 os.environ["OPENAI_API_BASE"] = "http://localhost:11434/v1"
 # Adjust based on available model"
 os.environ["OPENAI_MODEL_NAME"] = "mixtral"
-os.environ["OPENAI_API_KEY"] = <insert OpenAI API key here >
-os.environ["SERPER_API_KEY"] = <insert Serper API key here >
+# os.environ["OPENAI_API_KEY"] = <insert OpenAI API key here >
+# os.environ["SERPER_API_KEY"] = <insert Serper API key here >
 
 search_tool = SerperDevTool()
 
