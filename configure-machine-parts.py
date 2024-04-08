@@ -97,6 +97,6 @@ crew = Crew(
 
 # Starting the task execution process with enhanced feedback
 result = crew.kickoff(
-    inputs={"budget": 1000, "purpose": "Machine Learning workstation"}
+    inputs={"budget": 3000, "purpose": "Machine Learning workstation"}
 )
 print(result)
