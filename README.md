@@ -26,4 +26,4 @@ Prerequisites:
   - run "poetry init" to install those dependencies
   - to run any of the agent workflows, type "poetry run python {name of script}"
 
-Right now, these workflows in here are just tests so I can understand how crew.ai works.
+Right now, these workflows in here are just tests so I can understand how agentic frameworks work.
