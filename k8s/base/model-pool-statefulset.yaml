@@ -1,0 +1,118 @@
+---
+# Model Pool StatefulSet for running local LLM instances
+# Each pod can host different models based on configuration
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: model-pool
+  namespace: agi-system
+  labels:
+    app: model-pool
+    app.kubernetes.io/name: model-pool
+    app.kubernetes.io/component: inference
+    app.kubernetes.io/part-of: agi-in-a-box
+spec:
+  serviceName: model-pool
+  replicas: 1  # Scale based on model requirements
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: model-pool
+  template:
+    metadata:
+      labels:
+        app: model-pool
+    spec:
+      terminationGracePeriodSeconds: 120
+      containers:
+        - name: ollama
+          image: ollama/ollama:latest
+          ports:
+            - name: http
+              containerPort: 11434
+              protocol: TCP
+          env:
+            - name: OLLAMA_HOST
+              value: "0.0.0.0"
+            - name: OLLAMA_ORIGINS
+              value: "*"
+            - name: OLLAMA_NUM_PARALLEL
+              value: "2"
+            - name: OLLAMA_MAX_LOADED_MODELS
+              value: "2"
+          resources:
+            requests:
+              memory: "4Gi"
+              cpu: "2000m"
+            limits:
+              memory: "16Gi"
+              cpu: "8000m"
+              nvidia.com/gpu: "1"  # Request GPU if available
+          volumeMounts:
+            - name: model-storage
+              mountPath: /root/.ollama
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+      nodeSelector:
+        # Schedule on GPU nodes if available
+        # kubernetes.io/gpu: "true"
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"
+  volumeClaimTemplates:
+    - metadata:
+        name: model-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: standard  # Adjust for your cluster
+        resources:
+          requests:
+            storage: 50Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: model-pool
+  namespace: agi-system
+  labels:
+    app: model-pool
+spec:
+  type: ClusterIP
+  clusterIP: None  # Headless service for StatefulSet
+  ports:
+    - name: http
+      port: 11434
+      targetPort: http
+      protocol: TCP
+  selector:
+    app: model-pool
+---
+# Regular service for load balancing across model instances
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: agi-system
+  labels:
+    app: model-pool
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 11434
+      targetPort: http
+      protocol: TCP
+  selector:
+    app: model-pool

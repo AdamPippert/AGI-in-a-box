@@ -1,0 +1,140 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: router-config
+  namespace: agi-system
+  labels:
+    app: geometry-router
+data:
+  ROUTER_HOST: "0.0.0.0"
+  ROUTER_PORT: "8080"
+  ROUTER_GRPC_PORT: "50051"
+  LOG_LEVEL: "INFO"
+  TOPOLOGY_APPROXIMATE: "true"
+  SINKHORN_ITERATIONS: "20"
+  MAX_RECURSION_DEPTH: "5"
+  OPENAI_API_BASE: "http://ollama:11434/v1"
+  OPENAI_MODEL_NAME: "mixtral"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: crewai-config
+  namespace: agi-system
+  labels:
+    app: crewai-orchestrator
+data:
+  OPENAI_API_BASE: "http://ollama:11434/v1"
+  OPENAI_MODEL_NAME: "mixtral"
+  CREWAI_MEMORY_PATH: "/app/data/memory"
+  OUTPUT_PATH: "/app/data/output"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: model-registry
+  namespace: agi-system
+  labels:
+    app: geometry-router
+data:
+  models.yaml: |
+    # Model Registry Configuration
+    # This file defines the available models and their topological profiles
+
+    models:
+      # Orchestrator tier (Tier 0)
+      - id: claude-opus-4
+        name: "Claude Opus 4"
+        tier: ORCHESTRATOR
+        api_endpoint: "https://api.anthropic.com/v1"
+        api_type: anthropic
+        latency_ms: 3000
+        cost_per_token: 0.015
+        max_context_length: 200000
+        capabilities:
+          primary: [UNIVERSAL]
+          tags: ["reasoning", "analysis", "code", "creative"]
+        topology:
+          betti_0_range: [0, 100]
+          betti_1_range: [0, 50]
+          complexity_levels: [TRIVIAL, SIMPLE, MODERATE, COMPLEX, CHAOTIC]
+
+      # Specialist tier (Tier 1)
+      - id: claude-sonnet-code
+        name: "Claude Sonnet 3.5 (Code)"
+        tier: SPECIALIST
+        parent_id: claude-opus-4
+        api_endpoint: "https://api.anthropic.com/v1"
+        api_type: anthropic
+        latency_ms: 1500
+        cost_per_token: 0.003
+        max_context_length: 200000
+        capabilities:
+          primary: [B1_REDUCTION]
+          tags: ["code", "debugging", "refactoring"]
+        topology:
+          betti_0_range: [0, 30]
+          betti_1_range: [5, 100]
+          complexity_levels: [MODERATE, COMPLEX]
+
+      - id: deepseek-r1
+        name: "DeepSeek R1"
+        tier: SPECIALIST
+        parent_id: claude-opus-4
+        api_endpoint: "http://ollama:11434/v1"
+        api_type: openai
+        latency_ms: 2000
+        cost_per_token: 0.001
+        max_context_length: 128000
+        capabilities:
+          primary: [B0_REDUCTION]
+          tags: ["math", "reasoning", "logic"]
+        topology:
+          betti_0_range: [10, 100]
+          betti_1_range: [0, 20]
+          complexity_levels: [COMPLEX, CHAOTIC]
+
+      # Executor tier (Tier 2)
+      - id: claude-haiku-4
+        name: "Claude Haiku 4"
+        tier: EXECUTOR
+        parent_id: claude-sonnet-code
+        api_endpoint: "https://api.anthropic.com/v1"
+        api_type: anthropic
+        latency_ms: 300
+        cost_per_token: 0.00025
+        max_context_length: 200000
+        capabilities:
+          primary: [UNIVERSAL]
+          tags: ["fast", "simple-tasks", "classification"]
+        topology:
+          betti_0_range: [0, 10]
+          betti_1_range: [0, 5]
+          complexity_levels: [TRIVIAL, SIMPLE]
+
+      - id: mixtral-local
+        name: "Mixtral 8x7B (Local)"
+        tier: EXECUTOR
+        parent_id: claude-sonnet-code
+        api_endpoint: "http://ollama:11434/v1"
+        api_type: openai
+        latency_ms: 500
+        cost_per_token: 0.0
+        max_context_length: 32000
+        capabilities:
+          primary: [UNIVERSAL]
+          tags: ["local", "fast", "general"]
+        topology:
+          betti_0_range: [0, 20]
+          betti_1_range: [0, 10]
+          complexity_levels: [TRIVIAL, SIMPLE, MODERATE]
+
+    # Default routing configuration
+    routing:
+      sinkhorn_iterations: 20
+      overlap_threshold: 0.1
+      hierarchy_weight: 0.3
+      topology_weight: 0.7
+      max_recursion_depth: 5
+      learning_rate: 0.1
