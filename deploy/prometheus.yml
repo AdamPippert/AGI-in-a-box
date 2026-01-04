@@ -1,0 +1,43 @@
+# Prometheus configuration for AGI-in-a-Box monitoring
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+rule_files: []
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Geometry Router metrics
+  - job_name: 'geometry-router'
+    static_configs:
+      - targets: ['router:8080']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # CrewAI Orchestrator metrics
+  - job_name: 'crewai'
+    static_configs:
+      - targets: ['crewai:8081']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Redis metrics (requires redis_exporter sidecar)
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:9121']
+
+  # Ollama/Model Pool metrics
+  - job_name: 'ollama'
+    static_configs:
+      - targets: ['ollama:11434']
+    metrics_path: '/api/ps'
+    scrape_interval: 30s
