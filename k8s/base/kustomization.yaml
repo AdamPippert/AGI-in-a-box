@@ -1,0 +1,26 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: agi-system
+
+resources:
+  - namespace.yaml
+  - configmaps.yaml
+  - secrets.yaml
+  - storage.yaml
+  - redis-deployment.yaml
+  - router-deployment.yaml
+  - crewai-deployment.yaml
+  - model-pool-statefulset.yaml
+  - ingress.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: agi-in-a-box
+  app.kubernetes.io/managed-by: kustomize
+
+images:
+  - name: agi-in-a-box/router
+    newTag: latest
+  - name: agi-in-a-box/crewai
+    newTag: latest

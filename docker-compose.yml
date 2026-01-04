@@ -1,0 +1,283 @@
+# AGI-in-a-Box Docker Compose Configuration
+# Compatible with Docker Compose and Podman Compose
+#
+# Usage:
+#   docker-compose up -d              # Start all services
+#   docker-compose up router          # Start router only
+#   podman-compose up -d              # Podman alternative
+#
+# Profiles:
+#   docker-compose --profile full up  # Include all optional services
+#   docker-compose --profile dev up   # Development mode with hot-reload
+
+version: "3.8"
+
+services:
+  # ===========================================================================
+  # Core Services
+  # ===========================================================================
+
+  router:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: agi-in-a-box/router:${VERSION:-latest}
+    container_name: agi-router
+    restart: unless-stopped
+    ports:
+      - "${ROUTER_HTTP_PORT:-8080}:8080"
+      - "${ROUTER_GRPC_PORT:-50051}:50051"
+    environment:
+      - ROUTER_HOST=0.0.0.0
+      - ROUTER_PORT=8080
+      - ROUTER_GRPC_PORT=50051
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - TOPOLOGY_APPROXIMATE=${TOPOLOGY_APPROXIMATE:-true}
+      - SINKHORN_ITERATIONS=${SINKHORN_ITERATIONS:-20}
+      - MAX_RECURSION_DEPTH=${MAX_RECURSION_DEPTH:-5}
+      - OPENAI_API_BASE=http://ollama:11434/v1
+      - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-mixtral}
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - agi-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2"
+        reservations:
+          memory: 512M
+          cpus: "0.5"
+
+  crewai:
+    build:
+      context: .
+      dockerfile: Dockerfile.crewai
+    image: agi-in-a-box/crewai:${VERSION:-latest}
+    container_name: agi-crewai
+    restart: unless-stopped
+    ports:
+      - "${CREWAI_PORT:-8081}:8081"
+    environment:
+      - OPENAI_API_BASE=http://ollama:11434/v1
+      - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME:-mixtral}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - SERPER_API_KEY=${SERPER_API_KEY:-}
+      - CREWAI_MEMORY_PATH=/app/data/memory
+      - OUTPUT_PATH=/app/data/output
+    volumes:
+      - crewai-data:/app/data
+      - ./workflows:/app/workflows:ro
+    networks:
+      - agi-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1"
+
+  # ===========================================================================
+  # Model Backend
+  # ===========================================================================
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: agi-ollama
+    restart: unless-stopped
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_ORIGINS=*
+    networks:
+      - agi-network
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+        reservations:
+          memory: 4G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    profiles:
+      - full
+      - local-llm
+
+  # ===========================================================================
+  # State Management
+  # ===========================================================================
+
+  redis:
+    image: redis:7-alpine
+    container_name: agi-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - agi-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: agi-postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-agi}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-agipassword}
+      - POSTGRES_DB=${POSTGRES_DB:-agi_routing}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./deploy/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - agi-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-agi}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - full
+      - persistence
+
+  # ===========================================================================
+  # Observability (Optional)
+  # ===========================================================================
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: agi-prometheus
+    restart: unless-stopped
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    networks:
+      - agi-network
+    profiles:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: agi-grafana
+    restart: unless-stopped
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - agi-network
+    depends_on:
+      - prometheus
+    profiles:
+      - monitoring
+
+  # ===========================================================================
+  # Model Memory Services (Future)
+  # ===========================================================================
+
+  # Vector store for embeddings and semantic search
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: agi-qdrant
+    restart: unless-stopped
+    ports:
+      - "${QDRANT_HTTP_PORT:-6333}:6333"
+      - "${QDRANT_GRPC_PORT:-6334}:6334"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    networks:
+      - agi-network
+    profiles:
+      - memory
+      - full
+
+  # Message queue for async model communication
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: agi-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-agi}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-agipassword}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - agi-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    profiles:
+      - memory
+      - full
+
+# =============================================================================
+# Networks
+# =============================================================================
+
+networks:
+  agi-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+# =============================================================================
+# Volumes
+# =============================================================================
+
+volumes:
+  redis-data:
+    driver: local
+  postgres-data:
+    driver: local
+  ollama-models:
+    driver: local
+  crewai-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  qdrant-data:
+    driver: local
+  rabbitmq-data:
+    driver: local

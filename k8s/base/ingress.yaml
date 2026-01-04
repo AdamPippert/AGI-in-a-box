@@ -1,0 +1,90 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: agi-ingress
+  namespace: agi-system
+  labels:
+    app.kubernetes.io/part-of: agi-in-a-box
+  annotations:
+    # Nginx ingress annotations (adjust for your ingress controller)
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    # Enable gRPC if using nginx-ingress
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+    # Rate limiting
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/limit-connections: "50"
+spec:
+  ingressClassName: nginx  # Adjust for your cluster
+  rules:
+    - host: agi.example.com  # Replace with your domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: geometry-router
+                port:
+                  name: http
+          - path: /agents
+            pathType: Prefix
+            backend:
+              service:
+                name: crewai-orchestrator
+                port:
+                  name: http
+  # TLS configuration (uncomment and configure for production)
+  # tls:
+  #   - hosts:
+  #       - agi.example.com
+  #     secretName: agi-tls-secret
+---
+# Network Policy for security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: agi-network-policy
+  namespace: agi-system
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic from ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080
+        - protocol: TCP
+          port: 8081
+    # Allow internal traffic within namespace
+    - from:
+        - podSelector: {}
+  egress:
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+    # Allow internal traffic
+    - to:
+        - podSelector: {}
+    # Allow external API calls (Anthropic, OpenAI, etc.)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443

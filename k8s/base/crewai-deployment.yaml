@@ -1,0 +1,90 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crewai-orchestrator
+  namespace: agi-system
+  labels:
+    app: crewai-orchestrator
+    app.kubernetes.io/name: crewai-orchestrator
+    app.kubernetes.io/component: agent
+    app.kubernetes.io/part-of: agi-in-a-box
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: crewai-orchestrator
+  strategy:
+    type: Recreate  # Single instance for consistent agent memory
+  template:
+    metadata:
+      labels:
+        app: crewai-orchestrator
+    spec:
+      serviceAccountName: agi-crewai
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: crewai
+          image: agi-in-a-box/crewai:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8081
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: crewai-config
+            - secretRef:
+                name: crewai-secrets
+          env:
+            - name: CREWAI_MEMORY_PATH
+              value: "/app/data/memory"
+            - name: OUTPUT_PATH
+              value: "/app/data/output"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          volumeMounts:
+            - name: agent-memory
+              mountPath: /app/data
+            - name: workflows
+              mountPath: /app/workflows
+              readOnly: true
+      volumes:
+        - name: agent-memory
+          persistentVolumeClaim:
+            claimName: crewai-memory-pvc
+        - name: workflows
+          configMap:
+            name: crewai-workflows
+            optional: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: crewai-orchestrator
+  namespace: agi-system
+  labels:
+    app: crewai-orchestrator
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+      protocol: TCP
+  selector:
+    app: crewai-orchestrator
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: agi-crewai
+  namespace: agi-system

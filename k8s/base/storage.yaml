@@ -1,0 +1,46 @@
+---
+# Persistent Volume Claims for stateful components
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-profiles-pvc
+  namespace: agi-system
+  labels:
+    app: geometry-router
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard  # Adjust for your cluster
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: crewai-memory-pvc
+  namespace: agi-system
+  labels:
+    app: crewai-orchestrator
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: agi-system
+  labels:
+    app: redis
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 1Gi

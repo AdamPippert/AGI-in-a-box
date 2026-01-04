@@ -1,0 +1,73 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: agi-prod
+
+resources:
+  - ../../base
+
+namePrefix: prod-
+
+commonLabels:
+  environment: production
+
+# Production-specific patches
+patches:
+  # Increase replicas for prod
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+    target:
+      kind: Deployment
+      name: geometry-router
+  # Increase HPA for prod
+  - patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 3
+      - op: replace
+        path: /spec/maxReplicas
+        value: 20
+    target:
+      kind: HorizontalPodAutoscaler
+      name: geometry-router-hpa
+  # Enable exact topology for production accuracy
+  - patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: TOPOLOGY_APPROXIMATE
+          value: "false"
+    target:
+      kind: Deployment
+      name: geometry-router
+  # Increase storage for prod
+  - patch: |-
+      - op: replace
+        path: /spec/resources/requests/storage
+        value: 10Gi
+    target:
+      kind: PersistentVolumeClaim
+      name: model-profiles-pvc
+  - patch: |-
+      - op: replace
+        path: /spec/resources/requests/storage
+        value: 20Gi
+    target:
+      kind: PersistentVolumeClaim
+      name: crewai-memory-pvc
+
+configMapGenerator:
+  - name: router-config
+    behavior: merge
+    literals:
+      - LOG_LEVEL=WARNING
+      - TOPOLOGY_APPROXIMATE=false
+
+images:
+  - name: agi-in-a-box/router
+    newTag: v1.0.0
+  - name: agi-in-a-box/crewai
+    newTag: v1.0.0
