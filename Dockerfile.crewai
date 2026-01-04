@@ -1,0 +1,87 @@
+# AGI-in-a-Box: CrewAI Agent Orchestrator
+# Container for running CrewAI agent workflows
+
+# =============================================================================
+# Stage 1: Builder
+# =============================================================================
+FROM python:3.11-slim as builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Poetry
+ENV POETRY_VERSION=1.7.1
+ENV POETRY_HOME="/opt/poetry"
+ENV POETRY_VIRTUALENVS_IN_PROJECT=true
+ENV POETRY_NO_INTERACTION=1
+RUN pip install poetry==${POETRY_VERSION}
+
+WORKDIR /app
+
+# Copy dependency files
+COPY pyproject.toml poetry.lock* ./
+
+# Install dependencies including crewai extras
+RUN poetry install --no-root --only main 2>/dev/null || poetry install --no-root
+RUN poetry run pip install crewai-tools langchain-community || true
+
+# Copy application code
+COPY . .
+
+# Install project
+RUN poetry install --only main 2>/dev/null || poetry install
+
+# =============================================================================
+# Stage 2: Runtime
+# =============================================================================
+FROM python:3.11-slim as runtime
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --shell /bin/bash appuser
+
+WORKDIR /app
+
+# Copy virtual environment
+COPY --from=builder /app/.venv /app/.venv
+
+# Copy application code
+COPY --from=builder /app/geometry_router /app/geometry_router
+COPY --from=builder /app/configure-machine-parts.py /app/
+COPY --from=builder /app/pyproject.toml /app/
+
+# Set environment
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH="/app"
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# CrewAI configuration
+ENV OPENAI_API_BASE="http://ollama:11434/v1"
+ENV OPENAI_MODEL_NAME="mixtral"
+# OPENAI_API_KEY and SERPER_API_KEY should be provided at runtime
+
+# Agent memory persistence
+ENV CREWAI_MEMORY_PATH="/app/data/memory"
+ENV OUTPUT_PATH="/app/data/output"
+
+# Create data directories
+USER root
+RUN mkdir -p /app/data/memory /app/data/output && chown -R appuser:appuser /app/data
+USER appuser
+
+# Volume for persistent agent memory and outputs
+VOLUME ["/app/data"]
+
+# Health check
+HEALTHCHECK --interval=60s --timeout=10s --start-period=10s --retries=3 \
+    CMD test -f /app/data/.healthy || exit 1
+
+EXPOSE 8081
+
+# Default: run as a long-lived service that accepts workflow requests
+CMD ["python", "-c", "print('CrewAI Orchestrator ready. Mount workflows or run specific scripts.')"]
