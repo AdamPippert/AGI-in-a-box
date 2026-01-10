@@ -1,0 +1,631 @@
+# Viral Claude AI Prompts: 13 Copy-Paste Research Tools
+#
+# Author: Chris Laub (@ChrisLaubAI)
+# Date: January 10, 2026
+# Original Thread: https://x.com/chrislaubai/status/2009925399791501615
+#
+# These turned a "cool AI toy" into a research weapon that does
+# 10 hours of work in 60 seconds.
+
+id: viral_research_tools
+name: "Viral Research Tools Collection"
+
+metadata:
+  author: "Chris Laub (@ChrisLaubAI)"
+  date: "2026-01-10"
+  source: "https://x.com/chrislaubai/status/2009925399791501615"
+  description: |
+    A collection of viral Claude prompts gathered from Reddit, X, and research
+    communities. These prompts transform AI from a toy into a research tool
+    capable of doing 10 hours of work in 60 seconds.
+  version: "1.0.0"
+  license: "MIT"
+  tags:
+    - research
+    - analysis
+    - peer-review
+    - critical-thinking
+    - viral
+    - productivity
+
+prompts:
+  contradictions_finder:
+    id: contradictions_finder
+    name: "The Contradictions Finder"
+    template: |
+      List all internal contradictions, unresolved tensions, or claims that don't fully follow from the evidence.
+
+      Content to analyze:
+      {content}
+    category: analysis
+    intent: extract
+    description: |
+      Perfect for papers, reports, or long documents. This prompt catches
+      logical inconsistencies that humans often gloss over during reading.
+    tags:
+      - logic
+      - consistency
+      - validation
+      - documents
+    input_schema:
+      type: object
+      properties:
+        content:
+          type: string
+          description: The document or text to analyze for contradictions
+      required:
+        - content
+    output_schema:
+      type: object
+      properties:
+        contradictions:
+          type: array
+          items:
+            type: object
+            properties:
+              claim_a:
+                type: string
+              claim_b:
+                type: string
+              explanation:
+                type: string
+    chain_compatible: true
+
+  reviewer_2:
+    id: reviewer_2
+    name: "The Reviewer #2 Prompt"
+    template: |
+      Critique this like a skeptical peer reviewer. Be harsh. Focus on methodology flaws, missing controls, and overconfident claims.
+
+      Content to review:
+      {content}
+    category: critique
+    intent: evaluate
+    description: |
+      Named after the notoriously harsh Reviewer #2 in academic publishing.
+      This prompt provides brutal but necessary feedback on research quality.
+    tags:
+      - peer-review
+      - methodology
+      - academic
+      - critique
+    input_schema:
+      type: object
+      properties:
+        content:
+          type: string
+          description: Research paper, methodology, or claims to critique
+      required:
+        - content
+    output_schema:
+      type: object
+      properties:
+        methodology_flaws:
+          type: array
+          items:
+            type: string
+        missing_controls:
+          type: array
+          items:
+            type: string
+        overconfident_claims:
+          type: array
+          items:
+            type: string
+        overall_assessment:
+          type: string
+    chain_compatible: true
+
+  turn_into_paper:
+    id: turn_into_paper
+    name: "The Turn This Into a Paper Prompt"
+    template: |
+      Turn the following material into a structured research brief. Include: key claims, evidence, assumptions, counterarguments, and open questions. Flag anything weak or missing.
+
+      Raw material:
+      {content}
+    category: transformation
+    intent: transform
+    description: |
+      Use this when you dump raw notes, links, or half-baked ideas. This
+      prompt alone replaces hours of cleanup and structuring work.
+    tags:
+      - synthesis
+      - structuring
+      - research-brief
+      - writing
+    input_schema:
+      type: object
+      properties:
+        content:
+          type: string
+          description: Raw notes, links, or unstructured ideas
+      required:
+        - content
+    output_schema:
+      type: object
+      properties:
+        key_claims:
+          type: array
+          items:
+            type: string
+        evidence:
+          type: array
+          items:
+            type: object
+            properties:
+              claim:
+                type: string
+              supporting_evidence:
+                type: string
+        assumptions:
+          type: array
+          items:
+            type: string
+        counterarguments:
+          type: array
+          items:
+            type: string
+        open_questions:
+          type: array
+          items:
+            type: string
+        weak_points:
+          type: array
+          items:
+            type: string
+    chain_compatible: true
+
+  explain_backwards:
+    id: explain_backwards
+    name: "The Explain It Backwards Trick"
+    template: |
+      Explain this conclusion first, then work backward step by step to the assumptions.
+
+      Conclusion to reverse-engineer:
+      {content}
+    category: analysis
+    intent: extract
+    description: |
+      Great for checking real understanding. If the logic collapses when
+      traced backwards, you'll see it immediately.
+    tags:
+      - logic
+      - understanding
+      - assumptions
+      - reverse-engineering
+    input_schema:
+      type: object
+      properties:
+        content:
+          type: string
+          description: A conclusion or claim to trace backwards
+      required:
+        - content
+    output_schema:
+      type: object
+      properties:
+        conclusion:
+          type: string
+        reasoning_chain:
+          type: array
+          items:
+            type: object
+            properties:
+              step:
+                type: integer
+              statement:
+                type: string
+              depends_on:
+                type: array
+                items:
+                  type: integer
+        foundational_assumptions:
+          type: array
+          items:
+            type: string
+    chain_compatible: true
+
+  compare_like_scientist:
+    id: compare_like_scientist
+    name: "The Compare Like a Scientist Prompt"
+    template: |
+      Compare these two approaches across: theoretical grounding, failure modes, scalability, and real-world constraints.
+
+      Approach A:
+      {approach_a}
+
+      Approach B:
+      {approach_b}
+    category: comparison
+    intent: evaluate
+    description: |
+      Not feature lists. Real comparisons. This prompt forces rigorous
+      analysis across dimensions that matter for actual implementation.
+    tags:
+      - comparison
+      - scientific
+      - evaluation
+      - decision-making
+    input_schema:
+      type: object
+      properties:
+        approach_a:
+          type: string
+          description: First approach to compare
+        approach_b:
+          type: string
+          description: Second approach to compare
+      required:
+        - approach_a
+        - approach_b
+    output_schema:
+      type: object
+      properties:
+        theoretical_grounding:
+          type: object
+          properties:
+            approach_a:
+              type: string
+            approach_b:
+              type: string
+            comparison:
+              type: string
+        failure_modes:
+          type: object
+          properties:
+            approach_a:
+              type: array
+              items:
+                type: string
+            approach_b:
+              type: array
+              items:
+                type: string
+        scalability:
+          type: object
+          properties:
+            approach_a:
+              type: string
+            approach_b:
+              type: string
+        real_world_constraints:
+          type: object
+          properties:
+            approach_a:
+              type: array
+              items:
+                type: string
+            approach_b:
+              type: array
+              items:
+                type: string
+        recommendation:
+          type: string
+    chain_compatible: true
+
+  what_would_break:
+    id: what_would_break
+    name: "The What Would Break This Prompt"
+    template: |
+      Describe scenarios where this approach fails catastrophically. Not edge cases. Realistic failure modes.
+
+      Approach to stress-test:
+      {content}
+    category: stress_test
+    intent: evaluate
+    description: |
+      Gold for forecasting. Most people never ask this question, but it's
+      essential for robust planning and risk assessment.
+    tags:
+      - failure-modes
+      - risk
+      - forecasting
+      - robustness
+    input_schema:
+      type: object
+      properties:
+        content:
+          type: string
+          description: Approach, plan, or system to stress-test
+      required:
+        - content
+    output_schema:
+      type: object
+      properties:
+        catastrophic_failures:
+          type: array
+          items:
+            type: object
+            properties:
+              scenario:
+                type: string
+              likelihood:
+                type: string
+                enum:
+                  - low
+                  - medium
+                  - high
+              impact:
+                type: string
+              warning_signs:
+                type: array
+                items:
+                  type: string
+    chain_compatible: true
+
+  what_changed_mind:
+    id: what_changed_mind
+    name: "The What Changed My Mind Closer"
+    template: |
+      After analyzing all of this, what should change my current belief?
+
+      Current belief: {current_belief}
+
+      Analysis:
+      {analysis}
+    category: meta
+    intent: evaluate
+    description: |
+      This is how real researchers think. It forces explicit identification
+      of what evidence should update your priors.
+    tags:
+      - beliefs
+      - updating
+      - rationality
+      - meta-cognition
+    input_schema:
+      type: object
+      properties:
+        current_belief:
+          type: string
+          description: Your current position or belief
+        analysis:
+          type: string
+          description: The analysis that was performed
+      required:
+        - current_belief
+        - analysis
+    output_schema:
+      type: object
+      properties:
+        belief_updates:
+          type: array
+          items:
+            type: object
+            properties:
+              original_belief:
+                type: string
+              new_understanding:
+                type: string
+              evidence_that_changed_it:
+                type: string
+              confidence_change:
+                type: string
+    chain_compatible: true
+
+  one_page_mental_model:
+    id: one_page_mental_model
+    name: "The One-Page Mental Model"
+    template: |
+      Compress this entire topic into a single mental model I can remember.
+
+      Topic:
+      {content}
+    category: synthesis
+    intent: compress
+    description: |
+      If it can't compress, you don't own it yet. This prompt forces
+      distillation to the essential mental model.
+    tags:
+      - mental-models
+      - compression
+      - learning
+      - memory
+    input_schema:
+      type: object
+      properties:
+        content:
+          type: string
+          description: Topic or body of knowledge to compress
+      required:
+        - content
+    output_schema:
+      type: object
+      properties:
+        mental_model:
+          type: object
+          properties:
+            name:
+              type: string
+            core_principle:
+              type: string
+            key_components:
+              type: array
+              items:
+                type: string
+            how_it_works:
+              type: string
+            when_to_apply:
+              type: string
+            common_mistakes:
+              type: array
+              items:
+                type: string
+    chain_compatible: true
+
+  translate_across_domains:
+    id: translate_across_domains
+    name: "The Translate Across Domains Prompt"
+    template: |
+      Explain this concept using analogies from a completely different field.
+
+      Concept: {concept}
+      Target domain for analogies: {target_domain}
+    category: transformation
+    intent: transform
+    description: |
+      This unlocks insight, not just understanding. Cross-domain analogies
+      reveal deep structural similarities and generate novel perspectives.
+    tags:
+      - analogies
+      - cross-domain
+      - insight
+      - creativity
+    input_schema:
+      type: object
+      properties:
+        concept:
+          type: string
+          description: The concept to explain
+        target_domain:
+          type: string
+          description: The field to draw analogies from (optional)
+      required:
+        - concept
+    output_schema:
+      type: object
+      properties:
+        analogies:
+          type: array
+          items:
+            type: object
+            properties:
+              source_domain:
+                type: string
+              analogy:
+                type: string
+              mapping:
+                type: object
+              limitations:
+                type: string
+    chain_compatible: true
+
+  steal_the_structure:
+    id: steal_the_structure
+    name: "The Steal the Structure Trick"
+    template: |
+      Ignore the content. Analyze the structure, flow, and argument pattern. Why does this work so well?
+
+      Content to analyze:
+      {content}
+    category: meta
+    intent: extract
+    description: |
+      This is underrated. Use it on great papers and essays to understand
+      what makes them effective beyond their content.
+    tags:
+      - structure
+      - rhetoric
+      - writing
+      - meta-analysis
+    input_schema:
+      type: object
+      properties:
+        content:
+          type: string
+          description: Paper, essay, or document to analyze structurally
+      required:
+        - content
+    output_schema:
+      type: object
+      properties:
+        structure:
+          type: object
+          properties:
+            overall_pattern:
+              type: string
+            sections:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  purpose:
+                    type: string
+                  techniques:
+                    type: array
+                    items:
+                      type: string
+        flow:
+          type: object
+          properties:
+            progression:
+              type: string
+            transitions:
+              type: array
+              items:
+                type: string
+        argument_pattern:
+          type: string
+        why_it_works:
+          type: array
+          items:
+            type: string
+        reusable_template:
+          type: string
+    chain_compatible: true
+
+  assumption_stress_test:
+    id: assumption_stress_test
+    name: "The Assumption Stress Test"
+    template: |
+      List every assumption this argument relies on. Now tell me which ones are most fragile and why.
+
+      Argument:
+      {content}
+    category: stress_test
+    intent: extract
+    description: |
+      This one comes straight from research forums. It systematically
+      identifies and evaluates the foundational assumptions of any argument.
+    tags:
+      - assumptions
+      - stress-test
+      - critical-thinking
+      - foundations
+    input_schema:
+      type: object
+      properties:
+        content:
+          type: string
+          description: Argument or claim to stress-test
+      required:
+        - content
+    output_schema:
+      type: object
+      properties:
+        assumptions:
+          type: array
+          items:
+            type: object
+            properties:
+              assumption:
+                type: string
+              type:
+                type: string
+                enum:
+                  - explicit
+                  - implicit
+                  - hidden
+              fragility:
+                type: string
+                enum:
+                  - solid
+                  - moderate
+                  - fragile
+                  - critical
+              why_fragile:
+                type: string
+              if_wrong:
+                type: string
+        most_fragile:
+          type: array
+          items:
+            type: string
+        recommendations:
+          type: array
+          items:
+            type: string
+    chain_compatible: true
