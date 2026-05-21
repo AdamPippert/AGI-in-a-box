@@ -82,3 +82,27 @@ persim = "^0.3"      # Optional: persistence images
 ```
 
 See `geometry_router/docs/ARCHITECTURE.md` for detailed documentation.
+
+## Adaptive Residual Architecture (Optional)
+
+AGI-in-a-box now includes an optional three-layer adaptation extension integrated with `geometry_router`.
+
+- Layer 1: **When the system seems unsure, it looks things up.**
+- Layer 2: **When the system gets corrected, it remembers the fix for similar situations.**
+- Layer 3: **Only after the same issue happens enough times does the system prepare a deeper learning update.**
+
+### Safety model
+
+- Layers are configuration-gated and disabled by default.
+- Runtime does not mutate live base model weights.
+- Durable learning outputs are isolated JSONL artifacts for offline review/training.
+
+### Configuration toggles
+
+See `.env.example` for:
+
+- `ADAPT_LAYER1_ENABLED`, `ADAPT_LAYER2_ENABLED`, `ADAPT_LAYER3_ENABLED`
+- threshold controls for residual trigger, memory matching, and adaptation eligibility
+- persistence/export paths for residual memory and adaptation artifacts
+
+Detailed design: `docs/residual_adaptation_architecture.md`.
